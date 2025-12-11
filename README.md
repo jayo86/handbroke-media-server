@@ -14,6 +14,8 @@
 ## Understanding Usenet (getting content)
 In an over simplification, it's like ordering a pizza, but the pizzashop gets the ingredients from next door, on demand
 
+![](/images/usenet_infograph.png)<br>
+
 **Hungry User**: The process begins when you decide you want specific content, much like a hungry person deciding they crave a pepperoni pizza.
 
 **Personal Assistant (Sonarr/Radarr)**: Your automated software hears the request and immediately handles the logistics of finding and ordering the item for you.
