@@ -6,196 +6,144 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
-# --- 1. Detect Real User (The Human) ---
+# --- 1. Detect Real User ---
 if [ $SUDO_USER ]; then
     REAL_USER=$SUDO_USER
     REAL_HOME=$(getent passwd $SUDO_USER | cut -d: -f6)
 else
-    echo "Error: This script must be run via sudo from a regular user account (e.g., sudo ./script.sh)."
+    echo "Error: Run via sudo from a regular user (e.g., sudo ./script.sh)."
     exit 1
 fi
 
-echo "--- Configuration ---"
-echo "Target User: $REAL_USER"
-echo "Target Home: $REAL_HOME"
-echo "Target Group: media"
-echo "---------------------"
+echo "--- Target: $REAL_USER ($REAL_HOME) ---"
 
-# Install prerequisites (Added openssh-server and ufw)
-echo "Installing prerequisites..."
+# --- 2. System Update & Upgrade (Best Practice) ---
+echo "--- Updating System Packages ---"
+# Update package lists
 apt-get update -qq
-apt-get install -y curl gnupg ca-certificates apt-transport-https software-properties-common acl openssh-server ufw
+# Upgrade installed packages (non-interactive)
+# DEBIAN_FRONTEND=noninteractive prevents popups asking about config files
+DEBIAN_FRONTEND=noninteractive apt-get upgrade -y
 
-# --- 2. Create Group and Add Users ---
+# --- 3. Install Prerequisites ---
+echo "--- Installing Dependencies ---"
+# sqlite3 and mediainfo are required for Radarr/Sonarr
+apt-get install -y curl sqlite3 mediainfo ufw software-properties-common gnupg ca-certificates apt-transport-https
 
-echo "Configuring 'media' group..."
+# Create shared group 'media'
 groupadd -f media
 usermod -aG media "$REAL_USER"
 
-# --- 3. Install Jellyfin (Official Docs) ---
-
-echo "--- Checking Jellyfin ---"
-if ! command -v jellyfin &> /dev/null; then
-    echo "Installing Jellyfin..."
-    mkdir -p /etc/apt/keyrings
-    curl -fsSL https://repo.jellyfin.org/jellyfin_team.gpg.key | gpg --dearmor -o /etc/apt/keyrings/jellyfin.gpg --yes
-    export VERSION_OS="$(awk -F= '/^ID=/{print $2}' /etc/os-release)"
-    export VERSION_CODENAME="$(awk -F= '/^VERSION_CODENAME=/{print $2}' /etc/os-release)"
-    echo "deb [arch=$( dpkg --print-architecture ) signed-by=/etc/apt/keyrings/jellyfin.gpg] https://repo.jellyfin.org/${VERSION_OS} ${VERSION_CODENAME} main" > /etc/apt/sources.list.d/jellyfin.list
-    apt-get update -qq
-    apt-get install -y jellyfin
-else
-    echo "Jellyfin already installed."
-fi
-# Ensure Jellyfin service user is in media group
+# --- 4. Install Jellyfin (Official Script) ---
+echo "--- Installing Jellyfin ---"
+curl https://repo.jellyfin.org/install-debuntu.sh | bash
 usermod -aG media jellyfin
 
-# --- 4. Install SABnzbd (Official PPA) ---
+# --- 5. Install SABnzbd (Official PPA) ---
+echo "--- Installing SABnzbd ---"
+add-apt-repository -y ppa:jcfp/nobetas
+add-apt-repository -y ppa:jcfp/sab-addons
+apt-get update -qq
+apt-get install -y sabnzbdplus python3-sabyenc par2-tbb
 
-echo "--- Checking SABnzbd ---"
-if ! command -v sabnzbdplus &> /dev/null; then
-    echo "Installing SABnzbd..."
-    add-apt-repository -y ppa:jcfp/nobetas
-    add-apt-repository -y ppa:jcfp/sab-addons # Required for python libraries often needed
-    apt-get update -qq
-    apt-get install -y sabnzbdplus python3-sabyenc par2-tbb
-else
-    echo "SABnzbd already installed."
-fi
-
-# Fix SABnzbd Service Config to run as 'sabnzbd' user (Package creates user 'sabnzbd' but often defaults service to root or none)
-# We ensure the service runs as the dedicated 'sabnzbd' user.
+# Configure SABnzbd user
 if [ -f /etc/default/sabnzbdplus ]; then
     sed -i 's/^USER=.*/USER=sabnzbd/' /etc/default/sabnzbdplus
-    sed -i 's/^#USER=.*/USER=sabnzbd/' /etc/default/sabnzbdplus
-    # Ensure it listens on a port so it doesn't fail start
     sed -i 's/^HOST=.*/HOST=0.0.0.0/' /etc/default/sabnzbdplus
-    sed -i 's/^#HOST=.*/HOST=0.0.0.0/' /etc/default/sabnzbdplus
     sed -i 's/^PORT=.*/PORT=8080/' /etc/default/sabnzbdplus
-    sed -i 's/^#PORT=.*/PORT=8080/' /etc/default/sabnzbdplus
 fi
-# Add sabnzbd user to media group
 usermod -aG media sabnzbd
+systemctl restart sabnzbdplus
 
-# --- 5. Install Sonarr (Official Servarr Docs) ---
-
-echo "--- Checking Sonarr ---"
-if ! command -v sonarr &> /dev/null; then
-    echo "Installing Sonarr..."
-    mkdir -p /etc/apt/keyrings
-    curl -fsSL https://keyserver.ubuntu.com/pks/lookup?op=get\&search=0x200983798d5a8619bb6963df0a1029a6ca96fa1f | gpg --dearmor -o /etc/apt/keyrings/sonarr.gpg --yes
-    echo "deb [signed-by=/etc/apt/keyrings/sonarr.gpg] https://apt.sonarr.tv/ubuntu focal main" > /etc/apt/sources.list.d/sonarr.list
-    apt-get update -qq
-    apt-get install -y sonarr
-else
-    echo "Sonarr already installed."
-fi
-# Add sonarr user to media group
+# --- 6. Install Sonarr (Official Install Script) ---
+# Source: https://sonarr.tv/ (Linux section)
+echo "--- Installing Sonarr ---"
+curl -o install-sonarr.sh https://raw.githubusercontent.com/Sonarr/Sonarr/develop/distribution/debian/install.sh
+chmod +x install-sonarr.sh
+# Run the installer.
+bash install-sonarr.sh
+# Cleanup
+rm install-sonarr.sh
+# Ensure sonarr user is in media group
 usermod -aG media sonarr
 
-# --- 6. Install Radarr (Official Servarr Docs) ---
+# --- 7. Install Radarr (Official "Manual" Method) ---
+# Source: https://wiki.servarr.com/radarr/installation/linux
+echo "--- Installing Radarr ---"
 
-echo "--- Checking Radarr ---"
-if ! command -v radarr &> /dev/null; then
-    echo "Installing Radarr..."
-    mkdir -p /etc/apt/keyrings
-    curl -fsSL https://keyserver.ubuntu.com/pks/lookup?op=get\&search=0x90494435a83d537e | gpg --dearmor -o /etc/apt/keyrings/radarr.gpg --yes
-    echo "deb [signed-by=/etc/apt/keyrings/radarr.gpg] https://apt.radarr.video/ubuntu focal main" > /etc/apt/sources.list.d/radarr.list
-    apt-get update -qq
-    apt-get install -y radarr
+# 7a. Create Radarr user
+if ! id -u radarr &>/dev/null; then
+    useradd -r -s /usr/sbin/nologin -g media -m -d /var/lib/radarr radarr
 else
-    echo "Radarr already installed."
+    usermod -aG media radarr
 fi
-# Add radarr user to media group
-usermod -aG media radarr
 
-# --- 7. Create Directories & Apply Permissions ---
+# 7b. Download and Install
+echo "Downloading Radarr..."
+# Only download if directory doesn't exist to prevent overwriting/errors if run twice
+if [ ! -d "/opt/Radarr" ]; then
+    wget --content-disposition 'http://radarr.servarr.com/v1/update/master/updatefile?os=linux&runtime=netcore&arch=x64' -O Radarr.tar.gz
+    echo "Extracting to /opt/Radarr..."
+    tar -xzf Radarr.tar.gz -C /opt/
+    rm Radarr.tar.gz
+fi
 
-echo "--- Setting Directory Permissions & ACLs ---"
+# Fix permissions so 'radarr' user owns the files
+chown -R radarr:media /opt/Radarr
+chmod -R 775 /opt/Radarr
 
-# List of directories to process
-# 1. Create them
+# 7c. Create Systemd Service
+echo "Creating Radarr Service..."
+cat << EOF > /etc/systemd/system/radarr.service
+[Unit]
+Description=Radarr Daemon
+After=syslog.target network.target
+
+[Service]
+User=radarr
+Group=media
+Type=simple
+ExecStart=/opt/Radarr/Radarr -nobrowser -data=/var/lib/radarr/
+TimeoutStopSec=20
+KillMode=process
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# 7d. Start Radarr
+systemctl daemon-reload
+systemctl enable --now radarr
+
+# --- 8. Directories & Permissions ---
+echo "--- Configuring Directories ---"
 mkdir -p "$REAL_HOME/Downloads/complete"
 mkdir -p "$REAL_HOME/Downloads/incomplete"
 mkdir -p "$REAL_HOME/tv"
 mkdir -p "$REAL_HOME/movies"
 
-# Function to apply the specific permission logic
-apply_perms() {
-    local TARGET="$1"
-    local RECURSIVE="$2" # "yes" or "no" - though we usually apply to dir only, ACL default handles recursion for new files
-    
-    if [ -d "$TARGET" ]; then
-        echo "Processing: $TARGET"
-        
-        # 1. Set Ownership: Real User + Media Group
-        chown "$REAL_USER:media" "$TARGET"
-        
-        # 2. Set Permissions: 2775 (drwxrwsr-x)
-        # 2 = SetGID (New files inherit group 'media')
-        # 7 = Owner RWX
-        # 7 = Group RWX
-        # 5 = Others R-X
-        chmod 2775 "$TARGET"
+# Apply permissions (Owner: User, Group: Media, 775)
+chown -R "$REAL_USER:media" "$REAL_HOME/Downloads" "$REAL_HOME/tv" "$REAL_HOME/movies"
+chmod -R 775 "$REAL_HOME/Downloads" "$REAL_HOME/tv" "$REAL_HOME/movies"
+# Set SGID (New files inherit 'media' group)
+chmod -R g+s "$REAL_HOME/Downloads" "$REAL_HOME/tv" "$REAL_HOME/movies"
 
-        # 3. Apply ACLs
-        # -m: modify
-        # u::rwx owner has access
-        # g::rwx group has access
-        # o::rx others have read/execute
-        setfacl -m u::rwx,g::rwx,o::rx "$TARGET"
-        
-        # 4. Apply Default ACLs (The "Inherited" permissions)
-        # Note: The prompt requested complete downloads to have default:other::---
-        # but others to have default:other::r-x (implied by previous context, but we will make it strict where asked)
-        
-        if [[ "$TARGET" == *"/Downloads/complete"* ]]; then
-             # Strict default for complete folder as per prompt request
-             setfacl -d -m u::rwx,g::rwx,o::--- "$TARGET"
-        else
-             # Standard default for others
-             setfacl -d -m u::rwx,g::rwx,o::rx "$TARGET"
-        fi
-    fi
-}
+# ACLs: Ensure 'media' group always has write access
+setfacl -R -m g:media:rwx "$REAL_HOME/Downloads" "$REAL_HOME/tv" "$REAL_HOME/movies"
+setfacl -d -R -m g:media:rwx "$REAL_HOME/Downloads" "$REAL_HOME/tv" "$REAL_HOME/movies"
 
-# Apply to specific folders
-apply_perms "$REAL_HOME/Downloads/complete"
-apply_perms "$REAL_HOME/Downloads/incomplete"
-apply_perms "$REAL_HOME/tv"
-apply_perms "$REAL_HOME/movies"
+# --- 9. Firewall ---
+echo "--- Configuring UFW ---"
+ufw allow 22/tcp
+ufw allow 8080/tcp # SABnzbd
+ufw allow 8096/tcp # Jellyfin
+ufw allow 8989/tcp # Sonarr
+ufw allow 7878/tcp # Radarr
+ufw --force enable
 
-# --- 8. Restart Services to Apply Group Changes ---
-echo "--- Restarting Services ---"
-systemctl restart jellyfin
-systemctl restart sabnzbdplus
-systemctl restart sonarr
-systemctl restart radarr
-
-# --- 9. Configure Firewall (UFW) ---
-echo "--- Configuring Firewall (UFW) ---"
-# We check if ufw is installed just in case, though it was in prerequisites
-if command -v ufw &> /dev/null; then
-    # Reset to default state first to ensure clean slate (optional, but safer is just to allow)
-    # Allow SSH first to prevent lockout!
-    ufw allow 22/tcp comment 'SSH'
-    ufw allow 8080/tcp comment 'SABnzbd'
-    ufw allow 8096/tcp comment 'Jellyfin'
-    ufw allow 8989/tcp comment 'Sonarr'
-    ufw allow 7878/tcp comment 'Radarr'
-    
-    # Enable UFW non-interactively
-    echo "Enabling UFW..."
-    ufw --force enable
-    ufw status verbose
-else
-    echo "Error: UFW not found, skipping firewall setup."
-fi
-
-echo "=========================================================="
-echo "Installation, Permission Setup, and Firewall Complete!"
-echo "Users for applications have been added to group: media"
-echo "Directories in $REAL_HOME have been configured with SGID and ACLs."
-echo "Firewall (UFW) is active with ports 22, 8080, 8096, 8989, 7878 open."
-echo "Please reboot or log out/in for your own group changes to take full effect."
-echo "=========================================================="
+echo "Done! Access your apps at:"
+echo "Jellyfin: http://$(hostname -I | awk '{print $1}'):8096"
+echo "Sonarr:   http://$(hostname -I | awk '{print $1}'):8989"
+echo "Radarr:   http://$(hostname -I | awk '{print $1}'):7878"
+echo "SABnzbd:  http://$(hostname -I | awk '{print $1}'):8080"
