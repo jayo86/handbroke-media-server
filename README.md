@@ -1,5 +1,7 @@
 # HandBroke Media Server
-Good Luck, bra.
+If you don't download and watch Severence in the next 30 days, the server will detect this and delete itself.
+..also Welcome!
+
 ## Links
 [Current Hardware Specs and Codec Support](current_hardware.md)<br>
 [First Time Setup](bootstrap.md)<br>
