@@ -28,3 +28,10 @@ In an over simplification, it's like ordering a pizza, but the pizzashop gets th
 **Delivery (Download Client- sabnzbd)**: Once the shop retrieves and assembles all the ingredients, the finished pizza (your file) is delivered back to you, ready to enjoy.
 
 # Understanding streaming
+
+Movies are stored in highly compressed formats (think of a zipped file or a vacuum-packed suitcase) to save storage space, requiring them to be "unpacked" before they can be watched.
+
+**Decoding** is simply your device unpacking this video to show it to you, which works perfectly if your TV or phone already knows how to read that specific video type. This is Jellyfin running 'DirectPlay'
+
+However, if your device doesn't understand that specific format, Jellyfin must perform **Transcoding**, which acts like a real-time translator that unpacks the video and instantly repackages it into a new format your device can understand.
+
