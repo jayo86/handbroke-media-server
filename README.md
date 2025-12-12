@@ -1,14 +1,18 @@
-# Quick Reference
-## Apps
-| Application  |  address:port |
-|---|---|
-| SABnzbd  |  192.168.1.69:8080 |
-| Jellyfin  | 192.168.1.69:8096 | 
-| Sonarr (TV Shows)  | 192.168.1.69:8989 | 
-| Radarr (Movies)  | 192.168.1.69:7878 | 
+# HandBroke Media Server
+Good Luck, bra.
 ## Links
 [Current Hardware Specs and Codec Support](current_hardware.md)<br>
-### External
+[First Time Setup](bootstrap.md)<br>
+[Update Sonarr and Radarr](arr_update.md)
+
+| Application  |  address:port |
+|---|---|
+| SABnzbd  |  [192.168.1.69:8080](http://192.168/1/69:8080) |
+| Jellyfin  | [192.168.1.69:8096](http://192.168.1.69:8096) | 
+| Sonarr (TV Shows)  | [192.168.1.69:8989](http://192.168.1.69:8989) | 
+| Radarr (Movies)  | [192.168.1.69:7878](http://192.168.1.69:7878) | 
+
+### External Links
 [NZBGeek (Indexer)](https://nzbgeek.info/)<br>
 [Frugal (Provider)](https://billing.frugalusenet.com/login)<br>
 
