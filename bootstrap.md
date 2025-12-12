@@ -12,6 +12,8 @@ Setup process for a new server.
 - **Install OpenSSH:** So we're able to actually ssh onto the server
 - **Add Firewall Rules:** Open necessary ports for ssh and webui access to each application
 
+Scripts is idempotent
+
 ### Steps
 1. Copy [bootstrap.sh](scripts/bootstrap.sh) to server
 2. Apply perms to the script so it can run
