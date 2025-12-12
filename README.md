@@ -7,9 +7,10 @@
 | Sonarr (TV Shows)  | 192.168.1.69:8989 | 
 | Radarr (Movies)  | 192.168.1.69:7878 | 
 ## Links
+[Current Hardware Specs and Codec Support](current_hardware.md)<br>
+### External
 [NZBGeek (Indexer)](https://nzbgeek.info/)<br>
 [Frugal (Provider)](https://billing.frugalusenet.com/login)<br>
-[Current Hardware Specs and Codec Support](current_hardware.md)<br>
 
 # Understanding Usenet (getting content)
 In an over simplification, it's like ordering a pizza, but the pizzashop gets the ingredients from next door, on demand:
