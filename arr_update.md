@@ -13,7 +13,7 @@ The scripts do the following:<br>
 Scripts are idempotent.
 
 ### Steps
-Add the following to the server and run when update's are available
-
+1. Obtain your Sonarr's and Raddar's API keys.
+2. Add the following to the server and run when update's are available
 [radarr_update.sh](scripts/radarr_update.sh)<br>
 [sonarr_update.sh](scripts/sonarr_update.sh)
