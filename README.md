@@ -56,3 +56,14 @@ Client (TV, mobile) doesn't have the right codecs, so needs to be decoded then e
 - **Hardware transcoding** has the CPU and GPU working together to decode the encode the files. This is built into the hardware as part of what they're designed to do. Not only do they have (certain, depending on hardware) codecs programmed in, most CPUs will have hardware acceleration features to highly optimize the encoding/decoding process (eg Intel's QuickSync). Not all CPU/GPUs have all codecs.
 
 - There's also **Software transcoding**, where the CPU running the decoding part via software instruction, like its emulating what hardware decoding/encoding does, therefore it can be given codec instruction of **any** format. Not ideal unless its a very high-end fast CPU, so pretty much ignore this is an option.
+
+## Network Constraints
+DirecPlay and Transcoding is meaningless if there isn't sufficient network bandwidth, which ofter overlooked.
+
+## 4K Streaming Capacity & Network Performance Comparison
+
+| File Type | Average Bitrate | Peak Bitrate | 100 Mbps LAN (Old Setup) | 1000 Mbps LAN (New Upgrade) |
+| :--- | :--- | :--- | :--- | :--- |
+| **4K REMUX**<br>(Full Blu-ray Quality) | ~65 Mbps | ~120-140 Mbps | **0 Streams (Unstable)**<br>*(Peaks >100Mbps cause buffering)* | **~6 to 8 Streams**<br>*(Plenty of headroom)* |
+| **4K WEB-DL**<br>(High Quality Rip) | ~40 Mbps | ~60 Mbps | **1 to 2 Streams**<br>*(Risky if bitrate spikes)* | **~15 to 20 Streams** |
+| **4K Compressed**<br>(Netflix/YouTube quality) | ~20 Mbps | ~30 Mbps | **3 to 4 Streams** | **~30+ Streams** |
