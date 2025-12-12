@@ -5,7 +5,7 @@ Micro Dell OptiPlex 3060
 
 CPU: [Intel i5-8500T](https://www.intel.com/content/www/us/en/products/sku/129941/intel-core-i58500t-processor-9m-cache-up-to-3-50-ghz/specifications.html)<br>
 Memory: 8GB RAM <br>
-iGPU: Intel® UHD Graphics 630
+iGPU: Intel® UHD Graphics 630<br>
 Storage: 256GB SSD (OS) + 2TB SSD<br>
 Network: 1GBe LAN, WiFi<br>
 
