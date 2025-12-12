@@ -21,10 +21,10 @@ echo "Target Home: $REAL_HOME"
 echo "Target Group: media"
 echo "---------------------"
 
-# Install prerequisites
+# Install prerequisites (Added openssh-server and ufw)
 echo "Installing prerequisites..."
 apt-get update -qq
-apt-get install -y curl gnupg ca-certificates apt-transport-https software-properties-common acl
+apt-get install -y curl gnupg ca-certificates apt-transport-https software-properties-common acl openssh-server ufw
 
 # --- 2. Create Group and Add Users ---
 
@@ -172,9 +172,30 @@ systemctl restart sabnzbdplus
 systemctl restart sonarr
 systemctl restart radarr
 
+# --- 9. Configure Firewall (UFW) ---
+echo "--- Configuring Firewall (UFW) ---"
+# We check if ufw is installed just in case, though it was in prerequisites
+if command -v ufw &> /dev/null; then
+    # Reset to default state first to ensure clean slate (optional, but safer is just to allow)
+    # Allow SSH first to prevent lockout!
+    ufw allow 22/tcp comment 'SSH'
+    ufw allow 8080/tcp comment 'SABnzbd'
+    ufw allow 8096/tcp comment 'Jellyfin'
+    ufw allow 8989/tcp comment 'Sonarr'
+    ufw allow 7878/tcp comment 'Radarr'
+    
+    # Enable UFW non-interactively
+    echo "Enabling UFW..."
+    ufw --force enable
+    ufw status verbose
+else
+    echo "Error: UFW not found, skipping firewall setup."
+fi
+
 echo "=========================================================="
-echo "Installation and Permission Setup Complete!"
+echo "Installation, Permission Setup, and Firewall Complete!"
 echo "Users for applications have been added to group: media"
 echo "Directories in $REAL_HOME have been configured with SGID and ACLs."
+echo "Firewall (UFW) is active with ports 22, 8080, 8096, 8989, 7878 open."
 echo "Please reboot or log out/in for your own group changes to take full effect."
 echo "=========================================================="
