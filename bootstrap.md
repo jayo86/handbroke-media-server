@@ -14,6 +14,7 @@ Direcories will be made as per previous designs, locally under the user's home d
 External NAS can be considered at a later date, but not necessary with a 2tb SSD and redundancy not a priority. One day, but today is not that day.
 
 ## Bootstrap Script
+This is tested only for Ubuntu 24.x
 
 - **Environment Setup:** Detects the real user running sudo and creates a dedicated media group to unify access rights across the system.
 - **Package Installation:** Installs the latest stable versions of Jellyfin, SABnzbd, Sonarr, and Radarr using their official, third-party repositories.
