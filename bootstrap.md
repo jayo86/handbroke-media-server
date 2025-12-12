@@ -34,7 +34,7 @@ Scripts is idempotent.
     ```
 3. Run
     ```
-    sudo ./install_media_stack.sh
+    sudo ./bootstrap.sh
     ```
 ## Manual Config
 Log into each app's UI to:
