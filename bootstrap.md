@@ -1,6 +1,17 @@
 # Initial Setup
 
-Setup process for a new server.
+Setup process for a new server.<br>
+
+Direcories will be made as per previous designs, locally under the user's home directory, ie.
+**SABZBD paths:**<br>
+~/Downloads/complete<br>
+~/Downloads/incomplete<br>
+
+**Jellyfin paths:**<br>
+~/tv<br>
+~/movies
+
+External NAS can be considered at a later date, but not necessary with a 2tb SSD and redundancy not a priority. One day, but today is not that day.
 
 ## Bootstrap Script
 
@@ -12,7 +23,7 @@ Setup process for a new server.
 - **Install OpenSSH:** So we're able to actually ssh onto the server
 - **Add Firewall Rules:** Open necessary ports for ssh and webui access to each application
 
-Scripts is idempotent
+Scripts is idempotent.
 
 ### Steps
 1. Copy [bootstrap.sh](scripts/bootstrap.sh) to server
@@ -28,7 +39,7 @@ Scripts is idempotent
 Log into each app's UI to:
 - Jellyfin
     - Create User
-    - Set libraries
+    - Set libraries and folder paths
     - Install additional plugins (optional)
 - SABZBD
     - Configure indexer
