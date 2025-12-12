@@ -9,7 +9,7 @@ If you don't download and watch Severence in the next 30 days, the server will d
 
 | Application  |  address:port |
 |---|---|
-| SABnzbd  |  [192.168.1.69:8080](http://192.168/1/69:8080) |
+| SABnzbd  |  [192.168.1.69:8080](http://192.168/1.69:8080) |
 | Jellyfin  | [192.168.1.69:8096](http://192.168.1.69:8096) | 
 | Sonarr (TV Shows)  | [192.168.1.69:8989](http://192.168.1.69:8989) | 
 | Radarr (Movies)  | [192.168.1.69:7878](http://192.168.1.69:7878) | 
