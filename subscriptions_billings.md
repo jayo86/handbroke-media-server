@@ -6,7 +6,7 @@
 | **Indexer** | nzbgeek | GREEN GOAT GAMING | $9.00 Bi-yearly**| $120** |
 | **Phone App for management** | nzb360 | Google nzb360 Media S Barangaroo | $4.99 Monthly | No info online, go into Settings > Upgrade Center of the app |
 
-**AUD, those prices are converted from USD at time of writing, your mileage will vary slightly at the time of subscribing/atuo-renewing.
+**AUD, those prices are converted from USD at time of writing, your mileage will vary slightly at the time of subscribing/auto-renewing.
 
 ⚠️ Highly reccomend adjusting payments to PayPal as there's a report of nzbgeek being hacked back in 2020, where PayPal users were unaffected. (Also it will come up as 'GEEKHUBPTYL' instead of 'GREEN GOAT GAMING')
 
