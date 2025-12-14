@@ -5,7 +5,8 @@ If you don't download and watch Severence in the next 30 days, the server will d
 ## Links
 [Current Hardware Specs and Codec Support](current_hardware.md)<br>
 [First Time Setup](bootstrap.md)<br>
-[Update Sonarr and Radarr](arr_update.md)
+[Update Sonarr and Radarr](arr_update.md)<br>
+[Subscription & Billing](subscriptions_billings.md)
 
 | Application  |  address:port |
 |---|---|
