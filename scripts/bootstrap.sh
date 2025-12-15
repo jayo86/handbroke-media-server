@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# --- Configuration ---
+# Default fallback path if no secondary drive is found
+TARGET_MOUNT="/usenet"
+VG_NAME="usenet_vg"
+LV_NAME="media_lv"
+
 # Ensure the script is run with sudo
 if [ "$EUID" -ne 0 ]; then
   echo "Please run as root (sudo ./install_media_stack.sh)"
@@ -15,38 +21,114 @@ else
     exit 1
 fi
 
-echo "--- Target: $REAL_USER ($REAL_HOME) ---"
+echo "--- Target User: $REAL_USER ---"
 
-# --- 2. System Update & Upgrade (Best Practice) ---
+# --- 2. System Update & Upgrade ---
 echo "--- Updating System Packages ---"
-# Update package lists
 apt-get update -qq
-# Upgrade installed packages (non-interactive)
-# DEBIAN_FRONTEND=noninteractive prevents popups asking about config files
 DEBIAN_FRONTEND=noninteractive apt-get upgrade -y
 
-# --- 3. Install Prerequisites ---
-echo "--- Installing Dependencies ---"
-# sqlite3 and mediainfo are required for Radarr/Sonarr
-apt-get install -y curl sqlite3 mediainfo ufw software-properties-common gnupg ca-certificates apt-transport-https
+# --- 3. Install Prerequisites (Including SSH) ---
+echo "--- Installing Dependencies & SSH ---"
+apt-get install -y curl sqlite3 mediainfo ufw software-properties-common gnupg ca-certificates apt-transport-https acl openssh-server lvm2
 
 # Create shared group 'media'
 groupadd -f media
 usermod -aG media "$REAL_USER"
 
-# --- 4. Install Jellyfin (Official Script) ---
+# --- 4. STORAGE SETUP (Smart Detection) ---
+echo "--- Checking Storage Configuration ---"
+
+# Check if the Volume Group already exists (Idempotency)
+if vgs $VG_NAME >/dev/null 2>&1; then
+    echo "Existing Volume Group '$VG_NAME' detected."
+    if mount | grep -q "$TARGET_MOUNT"; then
+        echo "Storage is already mounted at $TARGET_MOUNT. Skipping format."
+    else
+        echo "Volume exists but not mounted. Mounting now..."
+        mkdir -p "$TARGET_MOUNT"
+        mount "/dev/$VG_NAME/$LV_NAME" "$TARGET_MOUNT"
+    fi
+else
+    # --- DRIVE DETECTION LOGIC ---
+    echo "No existing volume group found. Scanning for secondary drives..."
+    
+    # Identify the Root Disk source (e.g., /dev/sda2 or /dev/mapper/...)
+    ROOT_SOURCE=$(findmnt -n -o SOURCE /)
+    # Attempt to find the base disk name (e.g., sda) just for exclusion logic
+    ROOT_DISK_NAME=$(lsblk -no pkname "$ROOT_SOURCE" | head -n 1)
+    
+    # Find a candidate disk (Type=disk, NOT the root disk parent)
+    # We use grep -v to ensure we don't pick the disk hosting the OS
+    CANDIDATE_DISK=$(lsblk -dno NAME,SIZE,TYPE | grep disk | grep -v "$ROOT_DISK_NAME" | head -n 1)
+    
+    if [ -z "$CANDIDATE_DISK" ]; then
+        # --- NO SECONDARY DRIVE FOUND ---
+        # Calculate Free Space on Root
+        FREE_SPACE=$(df -h / --output=avail | tail -n 1 | xargs)
+        
+        echo "WARNING: No secondary drive found!"
+        read -p "Do you want to configure video directories on $ROOT_SOURCE with total free space of $FREE_SPACE? [y/N] " -n 1 -r
+        echo # move to a new line
+
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            echo "ABORTING: User cancelled installation."
+            exit 1
+        fi
+
+        # Ask for Custom Path
+        read -p "Enter the desired path for media storage [Default: $TARGET_MOUNT]: " USER_PATH
+        
+        # Update TARGET_MOUNT variable. If USER_PATH is empty, keep default.
+        TARGET_MOUNT=${USER_PATH:-$TARGET_MOUNT}
+        
+        echo "Proceeding with local storage at: $TARGET_MOUNT"
+
+    else
+        # --- SECONDARY DRIVE FOUND ---
+        DISK_NAME=$(echo "$CANDIDATE_DISK" | awk '{print $1}')
+        DISK_SIZE=$(echo "$CANDIDATE_DISK" | awk '{print $2}')
+        DISK_PATH="/dev/$DISK_NAME"
+
+        echo "----------------------------------------------------"
+        echo "FOUND SECONDARY DRIVE: $DISK_PATH (Size: $DISK_SIZE)"
+        echo "----------------------------------------------------"
+        read -p "Do you want to WIPE and FORMAT $DISK_PATH for $TARGET_MOUNT? [y/N] " -n 1 -r
+        echo
+
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            echo "--- Formatting Drive (LVM) ---"
+            pvcreate -f "$DISK_PATH"
+            vgcreate "$VG_NAME" "$DISK_PATH"
+            lvcreate -l 100%FREE -n "$LV_NAME" "$VG_NAME"
+            mkfs.ext4 "/dev/$VG_NAME/$LV_NAME"
+            mkdir -p "$TARGET_MOUNT"
+            mount "/dev/$VG_NAME/$LV_NAME" "$TARGET_MOUNT"
+            
+            # Persistent Mount
+            if ! grep -qs "$TARGET_MOUNT" /etc/fstab; then
+                echo "/dev/$VG_NAME/$LV_NAME $TARGET_MOUNT ext4 defaults 0 0" >> /etc/fstab
+            fi
+            echo "Storage setup complete!"
+        else
+            echo "Skipping drive formatting. Aborting to be safe."
+            exit 1
+        fi
+    fi
+fi
+
+# --- 5. Install Jellyfin ---
 echo "--- Installing Jellyfin ---"
 curl https://repo.jellyfin.org/install-debuntu.sh | bash
 usermod -aG media jellyfin
 
-# --- 5. Install SABnzbd (Official PPA) ---
+# --- 6. Install SABnzbd ---
 echo "--- Installing SABnzbd ---"
 add-apt-repository -y ppa:jcfp/nobetas
 add-apt-repository -y ppa:jcfp/sab-addons
 apt-get update -qq
 apt-get install -y sabnzbdplus python3-sabyenc par2-tbb
 
-# Configure SABnzbd user
 if [ -f /etc/default/sabnzbdplus ]; then
     sed -i 's/^USER=.*/USER=sabnzbd/' /etc/default/sabnzbdplus
     sed -i 's/^HOST=.*/HOST=0.0.0.0/' /etc/default/sabnzbdplus
@@ -55,45 +137,33 @@ fi
 usermod -aG media sabnzbd
 systemctl restart sabnzbdplus
 
-# --- 6. Install Sonarr (Official Install Script) ---
-# Source: https://sonarr.tv/ (Linux section)
+# --- 7. Install Sonarr ---
 echo "--- Installing Sonarr ---"
 curl -o install-sonarr.sh https://raw.githubusercontent.com/Sonarr/Sonarr/develop/distribution/debian/install.sh
 chmod +x install-sonarr.sh
-# Run the installer.
 bash install-sonarr.sh
-# Cleanup
 rm install-sonarr.sh
-# Ensure sonarr user is in media group
 usermod -aG media sonarr
 
-# --- 7. Install Radarr (Official "Manual" Method) ---
-# Source: https://wiki.servarr.com/radarr/installation/linux
+# --- 8. Install Radarr ---
 echo "--- Installing Radarr ---"
-
-# 7a. Create Radarr user
 if ! id -u radarr &>/dev/null; then
     useradd -r -s /usr/sbin/nologin -g media -m -d /var/lib/radarr radarr
 else
     usermod -aG media radarr
 fi
 
-# 7b. Download and Install
-echo "Downloading Radarr..."
-# Only download if directory doesn't exist to prevent overwriting/errors if run twice
 if [ ! -d "/opt/Radarr" ]; then
+    echo "Downloading Radarr..."
     wget --content-disposition 'http://radarr.servarr.com/v1/update/master/updatefile?os=linux&runtime=netcore&arch=x64' -O Radarr.tar.gz
-    echo "Extracting to /opt/Radarr..."
+    echo "Extracting..."
     tar -xzf Radarr.tar.gz -C /opt/
     rm Radarr.tar.gz
 fi
 
-# Fix permissions so 'radarr' user owns the files
 chown -R radarr:media /opt/Radarr
 chmod -R 775 /opt/Radarr
 
-# 7c. Create Systemd Service
-echo "Creating Radarr Service..."
 cat << EOF > /etc/systemd/system/radarr.service
 [Unit]
 Description=Radarr Daemon
@@ -112,38 +182,44 @@ Restart=on-failure
 WantedBy=multi-user.target
 EOF
 
-# 7d. Start Radarr
 systemctl daemon-reload
 systemctl enable --now radarr
 
-# --- 8. Directories & Permissions ---
-echo "--- Configuring Directories ---"
-mkdir -p "$REAL_HOME/Downloads/complete"
-mkdir -p "$REAL_HOME/Downloads/incomplete"
-mkdir -p "$REAL_HOME/tv"
-mkdir -p "$REAL_HOME/movies"
+# --- 9. Directories & Permissions ---
+# Note: Uses $TARGET_MOUNT which might have been changed by user in Step 4
+echo "--- Configuring Directories in $TARGET_MOUNT ---"
 
-# Apply permissions (Owner: User, Group: Media, 775)
-chown -R "$REAL_USER:media" "$REAL_HOME/Downloads" "$REAL_HOME/tv" "$REAL_HOME/movies"
-chmod -R 775 "$REAL_HOME/Downloads" "$REAL_HOME/tv" "$REAL_HOME/movies"
-# Set SGID (New files inherit 'media' group)
-chmod -R g+s "$REAL_HOME/Downloads" "$REAL_HOME/tv" "$REAL_HOME/movies"
+mkdir -p "$TARGET_MOUNT"
+mkdir -p "$TARGET_MOUNT/Downloads/complete"
+mkdir -p "$TARGET_MOUNT/Downloads/incomplete"
+mkdir -p "$TARGET_MOUNT/tv"
+mkdir -p "$TARGET_MOUNT/movies"
 
-# ACLs: Ensure 'media' group always has write access
-setfacl -R -m g:media:rwx "$REAL_HOME/Downloads" "$REAL_HOME/tv" "$REAL_HOME/movies"
-setfacl -d -R -m g:media:rwx "$REAL_HOME/Downloads" "$REAL_HOME/tv" "$REAL_HOME/movies"
+echo "Setting permissions..."
+chown -R "$REAL_USER:media" "$TARGET_MOUNT"
+chmod -R 775 "$TARGET_MOUNT"
+chmod -R g+s "$TARGET_MOUNT"
+setfacl -R -m g:media:rwx "$TARGET_MOUNT"
+setfacl -d -R -m g:media:rwx "$TARGET_MOUNT"
 
-# --- 9. Firewall ---
+# --- 10. Firewall ---
 echo "--- Configuring UFW ---"
 ufw allow 22/tcp
-ufw allow 8080/tcp # SABnzbd
-ufw allow 8096/tcp # Jellyfin
-ufw allow 8989/tcp # Sonarr
-ufw allow 7878/tcp # Radarr
+ufw allow 8080/tcp
+ufw allow 8096/tcp
+ufw allow 8989/tcp
+ufw allow 7878/tcp
 ufw --force enable
 
-echo "Done! Access your apps at:"
-echo "Jellyfin: http://$(hostname -I | awk '{print $1}'):8096"
-echo "Sonarr:   http://$(hostname -I | awk '{print $1}'):8989"
-echo "Radarr:   http://$(hostname -I | awk '{print $1}'):7878"
-echo "SABnzbd:  http://$(hostname -I | awk '{print $1}'):8080"
+# --- 11. Done ---
+IP_ADDR=$(hostname -I | awk '{print $1}')
+echo "------------------------------------------------"
+echo "INSTALLATION COMPLETE"
+echo "------------------------------------------------"
+echo "Storage Location: $TARGET_MOUNT"
+echo "Access your applications here:"
+echo " * Jellyfin: http://$IP_ADDR:8096"
+echo " * Sonarr:   http://$IP_ADDR:8989"
+echo " * Radarr:   http://$IP_ADDR:7878"
+echo " * SABnzbd:  http://$IP_ADDR:8080"
+echo "------------------------------------------------"
