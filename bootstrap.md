@@ -17,16 +17,20 @@ External NAS can be considered at a later date, but not necessary with a 2tb SSD
 
 ## Bootstrap Script
 This is tested only for Ubuntu 24.x
+- Verifies root access and identifies the target user.
+- Updates and upgrades all system packages to latest versions.
+- Installs dependencies and increases system file watcher limits.
+- Auto-detects, wipes, formats, and mounts the storage drive.
+- Installs OpenSSH
+- Installs the Jellyfin media server application.
+- Installs SABnzbd and force-creates its system user.
+- Installs Sonarr using the official installer script.
+- Downloads Radarr, creates user, and configures system service.
+- Creates folder structure and enforces group permissions.
+- Enables firewall and opens ports for all applications.
+- Checks if kernel updates require a system reboot.
 
-- **Environment Setup:** Detects the real user running sudo and creates a dedicated media group to unify access rights across the system.
-- **Directory Provisioning:** Creates a directories on either 2nd larger disk (usenet/Downloads, usenet/tv, usenet/movies), or where the user prefers if 2nd disk not found.
-- **Package Installation:** Installs the latest stable versions of Jellyfin, SABnzbd, Sonarr, and Radarr using their official, third-party repositories.
-- **Service Configuration:** automatically adds all service accounts (e.g., sonarr, jellyfin) to the media group and patches the SABnzbd service to run as a dedicated user rather than root.
-- **Permission Enforcement:** Applies SGID (Set Group ID) and ACLs (Access Control Lists) to these folders, ensuring all apps have permanent read/write access and that new files automatically inherit the correct group permissions.
-- **Install OpenSSH:** So we're able to actually ssh onto the server
-- **Add Firewall Rules:** Open necessary ports for ssh and webui access to each application
-
-Scripts is idempotent.
+Script is idempotent.
 
 ### Steps
 1. Copy [bootstrap.sh](scripts/bootstrap.sh) to server
