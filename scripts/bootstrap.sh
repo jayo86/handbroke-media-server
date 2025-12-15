@@ -168,13 +168,18 @@ fi
 
 # --- 6. Install SABnzbd ---
 echo "--- Application: SABnzbd ---"
-if ! dpkg -s sabnzbdplus >/dev/null 2>&1; then
-    log_change "Installing SABnzbd..."
+# FIXED LOGIC: Checks if package is missing OR if the user 'sabnzbd' is missing.
+# This ensures broken installs (where the user wasn't created) get repaired automatically.
+if ! dpkg -s sabnzbdplus >/dev/null 2>&1 || ! id -u sabnzbd >/dev/null 2>&1; then
+    log_change "Installing or Repairing SABnzbd..."
     add-apt-repository -y ppa:jcfp/nobetas
     add-apt-repository -y ppa:jcfp/sab-addons
     apt-get update -qq
-    # FIXED: Removed 'python3-sabyenc' and 'par2-tbb' (Old/Deprecated)
-    # The main package 'sabnzbdplus' will automatically pull the correct new dependencies.
+    
+    # Try to fix any broken installs first
+    dpkg --configure -a || true
+    
+    # Install the main package (it auto-handles dependencies)
     apt-get install -y sabnzbdplus
 
     # Configure defaults
@@ -186,7 +191,7 @@ if ! dpkg -s sabnzbdplus >/dev/null 2>&1; then
     usermod -aG media sabnzbd
     systemctl restart sabnzbdplus
 else
-    log_ok "SABnzbd is already installed."
+    log_ok "SABnzbd is correctly installed and user exists."
 fi
 
 # --- 7. Install Sonarr ---
