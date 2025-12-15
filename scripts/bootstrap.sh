@@ -56,13 +56,22 @@ else
     DEBIAN_FRONTEND=noninteractive apt-get upgrade -y
 fi
 
-# --- 3. Install Prerequisites ---
-echo "--- Dependencies ---"
+# --- 3. Install Prerequisites & System Tuning ---
+echo "--- Dependencies & Tuning ---"
 if ! dpkg -s lvm2 >/dev/null 2>&1; then
     log_change "Installing Dependencies..."
     apt-get install -y curl sqlite3 mediainfo ufw software-properties-common gnupg ca-certificates apt-transport-https acl openssh-server lvm2 git
 else
     log_ok "Dependencies already installed."
+fi
+
+# Fix: Increase inotify user watches (Essential for Jellyfin/Sonarr monitoring)
+if [ ! -f /etc/sysctl.d/40-max-user-watches.conf ]; then
+    log_change "increasing fs.inotify.max_user_watches to 524288..."
+    echo "fs.inotify.max_user_watches=524288" > /etc/sysctl.d/40-max-user-watches.conf
+    sysctl -p /etc/sysctl.d/40-max-user-watches.conf
+else
+    log_ok "Inotify limit already configured."
 fi
 
 # Create shared group 'media'
@@ -90,7 +99,6 @@ else
     
     if [ -z "$CANDIDATE_DISK" ]; then
         # --- NO SECONDARY DRIVE ---
-        # Automate: Default to local storage without asking
         echo -e "${YELLOW}WARNING: No secondary drive found.${NC}"
         log_change "Auto-configuring local storage at: $TARGET_MOUNT"
     else
