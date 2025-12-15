@@ -2,14 +2,16 @@
 
 Setup process for a new server.<br>
 
-Direcories will be made as per previous designs, locally under the user's home directory, ie.
+If a 2nd drive's detected, directories will be.
 **SABZBD paths:**<br>
-~/Downloads/complete<br>
-~/Downloads/incomplete<br>
+usenet/Downloads/complete<br>
+usenet/Downloads/incomplete<br>
 
 **Jellyfin paths:**<br>
-~/tv<br>
-~/movies
+usenet/tv<br>
+usenet/movies
+
+If no 2nd drive detected, it will prompt if you want to continue and if yes, will then prompt you where you want to the folders.
 
 External NAS can be considered at a later date, but not necessary with a 2tb SSD and redundancy not a priority. One day, but today is not that day.
 
@@ -17,9 +19,9 @@ External NAS can be considered at a later date, but not necessary with a 2tb SSD
 This is tested only for Ubuntu 24.x
 
 - **Environment Setup:** Detects the real user running sudo and creates a dedicated media group to unify access rights across the system.
+- **Directory Provisioning:** Creates a directories on either 2nd larger disk (usenet/Downloads, usenet/tv, usenet/movies), or where the user prefers if 2nd disk not found.
 - **Package Installation:** Installs the latest stable versions of Jellyfin, SABnzbd, Sonarr, and Radarr using their official, third-party repositories.
 - **Service Configuration:** automatically adds all service accounts (e.g., sonarr, jellyfin) to the media group and patches the SABnzbd service to run as a dedicated user rather than root.
-- **Directory Provisioning:** Creates a standard media hierarchy (~/Downloads, ~/tv, ~/movies) directly in the user's home directory.
 - **Permission Enforcement:** Applies SGID (Set Group ID) and ACLs (Access Control Lists) to these folders, ensuring all apps have permanent read/write access and that new files automatically inherit the correct group permissions.
 - **Install OpenSSH:** So we're able to actually ssh onto the server
 - **Add Firewall Rules:** Open necessary ports for ssh and webui access to each application
