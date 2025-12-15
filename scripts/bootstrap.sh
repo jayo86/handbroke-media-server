@@ -36,7 +36,7 @@ apt-get install -y curl sqlite3 mediainfo ufw software-properties-common gnupg c
 groupadd -f media
 usermod -aG media "$REAL_USER"
 
-# --- 4. STORAGE SETUP (Smart Detection) ---
+# --- 4. STORAGE SETUP (Smart Detection & Wipe) ---
 echo "--- Checking Storage Configuration ---"
 
 # Check if the Volume Group already exists (Idempotency)
@@ -53,7 +53,7 @@ else
     # --- DRIVE DETECTION LOGIC ---
     echo "No existing volume group found. Scanning for secondary drives..."
     
-    # Identify the Root Disk source (e.g., /dev/sda2 or /dev/mapper/...)
+    # Identify the Root Disk source (e.g., /dev/sda2)
     ROOT_SOURCE=$(findmnt -n -o SOURCE /)
     # Attempt to find the base disk name (e.g., sda) just for exclusion logic
     ROOT_DISK_NAME=$(lsblk -no pkname "$ROOT_SOURCE" | head -n 1)
@@ -93,19 +93,40 @@ else
         echo "----------------------------------------------------"
         echo "FOUND SECONDARY DRIVE: $DISK_PATH (Size: $DISK_SIZE)"
         echo "----------------------------------------------------"
+        echo "WARNING: This drive appears to be: $DISK_PATH"
+        echo "If this drive has an old OS (Ubuntu/Windows), this step will"
+        echo "completely remove all boot partitions, EFI, and data."
+        echo "----------------------------------------------------"
         read -p "Do you want to WIPE and FORMAT $DISK_PATH for $TARGET_MOUNT? [y/N] " -n 1 -r
         echo
 
         if [[ $REPLY =~ ^[Yy]$ ]]; then
+            echo "--- Cleaning drive (The 'Nuke' Step) ---"
+            # 1. Wipe all filesystem signatures and partition tables
+            # This ensures no old Ubuntu boot partitions remain to confuse LVM
+            wipefs -a -f "$DISK_PATH"
+            
+            # Sleep to let the kernel update device list
+            sleep 2
+            
             echo "--- Formatting Drive (LVM) ---"
-            pvcreate -f "$DISK_PATH"
+            # 2. Initialize Physical Volume (Force just in case)
+            pvcreate -y -ff "$DISK_PATH"
+            
+            # 3. Create Volume Group
             vgcreate "$VG_NAME" "$DISK_PATH"
-            lvcreate -l 100%FREE -n "$LV_NAME" "$VG_NAME"
+            
+            # 4. Create Logical Volume (Uses 100% of space)
+            # The -y flag answers "yes" to any signature warnings
+            lvcreate -y -l 100%FREE -n "$LV_NAME" "$VG_NAME"
+            
+            # 5. Format to ext4
             mkfs.ext4 "/dev/$VG_NAME/$LV_NAME"
+            
+            # 6. Mount and Persist
             mkdir -p "$TARGET_MOUNT"
             mount "/dev/$VG_NAME/$LV_NAME" "$TARGET_MOUNT"
             
-            # Persistent Mount
             if ! grep -qs "$TARGET_MOUNT" /etc/fstab; then
                 echo "/dev/$VG_NAME/$LV_NAME $TARGET_MOUNT ext4 defaults 0 0" >> /etc/fstab
             fi
@@ -204,11 +225,11 @@ setfacl -d -R -m g:media:rwx "$TARGET_MOUNT"
 
 # --- 10. Firewall ---
 echo "--- Configuring UFW ---"
-ufw allow 22/tcp
-ufw allow 8080/tcp
-ufw allow 8096/tcp
-ufw allow 8989/tcp
-ufw allow 7878/tcp
+ufw allow 22/tcp   # SSH
+ufw allow 8080/tcp # SABnzbd
+ufw allow 8096/tcp # Jellyfin
+ufw allow 8989/tcp # Sonarr
+ufw allow 7878/tcp # Radarr
 ufw --force enable
 
 # --- 11. Done ---
@@ -217,6 +238,12 @@ echo "------------------------------------------------"
 echo "INSTALLATION COMPLETE"
 echo "------------------------------------------------"
 echo "Storage Location: $TARGET_MOUNT"
+if mount | grep -q "$TARGET_MOUNT"; then
+    echo "Status: MOUNTED (LVM Configured)"
+else
+    echo "Status: Using Local Storage (Not Mounted)"
+fi
+echo ""
 echo "Access your applications here:"
 echo " * Jellyfin: http://$IP_ADDR:8096"
 echo " * Sonarr:   http://$IP_ADDR:8989"
