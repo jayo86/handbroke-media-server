@@ -169,7 +169,6 @@ fi
 # --- 6. Install SABnzbd ---
 echo "--- Application: SABnzbd ---"
 # FIXED LOGIC: Checks if package is missing OR if the user 'sabnzbd' is missing.
-# This ensures broken installs (where the user wasn't created) get repaired automatically.
 if ! dpkg -s sabnzbdplus >/dev/null 2>&1 || ! id -u sabnzbd >/dev/null 2>&1; then
     log_change "Installing or Repairing SABnzbd..."
     add-apt-repository -y ppa:jcfp/nobetas
@@ -181,6 +180,14 @@ if ! dpkg -s sabnzbdplus >/dev/null 2>&1 || ! id -u sabnzbd >/dev/null 2>&1; the
     
     # Install the main package (it auto-handles dependencies)
     apt-get install -y sabnzbdplus
+
+    # --- EXPLICIT USER CREATION ---
+    # If the package failed to create the user, we do it manually.
+    if ! id -u sabnzbd >/dev/null 2>&1; then
+        log_change "User 'sabnzbd' was not created by package. Creating manually..."
+        useradd -r -s /usr/sbin/nologin -g media -m -d /var/lib/sabnzbd sabnzbd
+    fi
+    # ------------------------------
 
     # Configure defaults
     if [ -f /etc/default/sabnzbdplus ]; then
