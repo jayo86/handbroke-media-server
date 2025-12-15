@@ -62,10 +62,9 @@ fi
 # --- 3. Install Prerequisites ---
 echo "--- Dependencies ---"
 # Check if a random dependency is missing to decide if we log 'change' or 'ok'
-# (Simplification: just running install is safe, but for color we check one)
 if ! dpkg -s lvm2 >/dev/null 2>&1; then
-    log_change "Installing Dependencies (LVM, SSH, UFW, ACL)..."
-    apt-get install -y curl sqlite3 mediainfo ufw software-properties-common gnupg ca-certificates apt-transport-https acl openssh-server lvm2
+    log_change "Installing Dependencies (LVM, SSH, UFW, ACL, Git)..."
+    apt-get install -y curl sqlite3 mediainfo ufw software-properties-common gnupg ca-certificates apt-transport-https acl openssh-server lvm2 git
 else
     log_ok "Dependencies already installed."
 fi
@@ -174,7 +173,9 @@ if ! dpkg -s sabnzbdplus >/dev/null 2>&1; then
     add-apt-repository -y ppa:jcfp/nobetas
     add-apt-repository -y ppa:jcfp/sab-addons
     apt-get update -qq
-    apt-get install -y sabnzbdplus python3-sabyenc par2-tbb
+    # FIXED: Removed 'python3-sabyenc' and 'par2-tbb' (Old/Deprecated)
+    # The main package 'sabnzbdplus' will automatically pull the correct new dependencies.
+    apt-get install -y sabnzbdplus
 
     # Configure defaults
     if [ -f /etc/default/sabnzbdplus ]; then
