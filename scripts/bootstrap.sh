@@ -307,6 +307,6 @@ if [ -f /var/run/reboot-required ]; then
         log_change "Rebooting system..."
         reboot
     else
-        log_ok "Reboot skipped. Please reboot manually later."
+        log_ok "Reboot skipped. Please reboot manually later!"
     fi
 fi
