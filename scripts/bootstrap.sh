@@ -238,18 +238,32 @@ setfacl -d -R -m g:media:rwx "$TARGET_MOUNT"
 # --- 10. Firewall ---
 echo "--- Firewall (UFW) ---"
 log_change "Enabling UFW..."
-ufw allow 22/tcp   > /dev/null
+ufw allow 22/tcp    > /dev/null
 ufw allow 8080/tcp > /dev/null
 ufw allow 8096/tcp > /dev/null
 ufw allow 8989/tcp > /dev/null
 ufw allow 7878/tcp > /dev/null
 ufw --force enable > /dev/null
 
-# --- 11. Summary ---
+# --- 11. Automated Maintenance ---
+echo "--- Maintenance Schedule ---"
+# Create a cron file in /etc/cron.d (cleaner than user crontabs)
+CRON_FILE="/etc/cron.d/media_auto_update"
+if [ ! -f "$CRON_FILE" ]; then
+    log_change "Setting up monthly update & reboot (1st of month @ 3am)..."
+    # Format: m h  dom mon dow user command
+    # 0 3 1 * * = 03:00 AM on the 1st of every month
+    echo "0 3 1 * * root apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get upgrade -y && /sbin/shutdown -r now" > "$CRON_FILE"
+    chmod 644 "$CRON_FILE"
+else
+    log_ok "Maintenance cron job already exists."
+fi
+
+# --- 12. Summary ---
 IP_ADDR=$(hostname -I | awk '{print $1}')
 echo ""
 echo "------------------------------------------------"
-echo -e "${GREEN}       INSTALLATION COMPLETE       ${NC}"
+echo -e "${GREEN}        INSTALLATION COMPLETE        ${NC}"
 echo "------------------------------------------------"
 echo " Storage Location: $TARGET_MOUNT"
 echo ""
@@ -258,8 +272,10 @@ echo -e " * Sonarr:   ${YELLOW}http://$IP_ADDR:8989${NC}"
 echo -e " * Radarr:   ${YELLOW}http://$IP_ADDR:7878${NC}"
 echo -e " * SABnzbd:  ${YELLOW}http://$IP_ADDR:8080${NC}"
 echo "------------------------------------------------"
+echo -e " * Updates:  ${YELLOW}Scheduled for 1st of month @ 3:00 AM${NC}"
+echo "------------------------------------------------"
 
-# --- 12. Reboot Check ---
+# --- 13. Reboot Check ---
 if [ -f /var/run/reboot-required ]; then
     echo ""
     echo -e "${YELLOW}NOTE: A system reboot is required to complete updates.${NC}"
