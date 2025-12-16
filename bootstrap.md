@@ -33,13 +33,18 @@ This is tested only for Ubuntu 24.x
 Script is idempotent.
 
 ### Steps
-1. Copy [bootstrap.sh](scripts/bootstrap.sh) to server
-2. Apply perms to the script so it can run
-    ```
+1. Install git, clone repo, update perms to be able to run
+    ```bash
+    sudo apt update
+    sudo apt install git -y
+    mkdir ~/repos
+    cd ~/repos
+    git clone https://github.com/jayo86/handbroke-media-server.git
+    cd scripts
     sudo chmod +x bootstrap.sh
     ```
-3. Run
-    ```
+2. Run
+    ```bash
     sudo ./bootstrap.sh
     ```
 ## Manual Config
@@ -49,14 +54,16 @@ Log into each app's UI to:
     - Set libraries and folder paths
     - Install additional plugins (optional)
 - SABZBD
-    - Configure indexer
+    - Configure provider
     - Set CHMOD 777 for newly downloaded files (important)
-    - Set folder paths
+    - Set folder paths for complete/incomplete, ie. `/usenet/Downloads/complete`,`/usenet/Downloads/incomplete`
 - Sonarr & Radarr
     - Add download client (SABNZBD)
     - Add Indexer (GeekNZB)
- 
-  ..probably other things I haven't thought of right now, but thats fundamental stuff. Maybe script all this one day
+    - set paths, ie. `/usenet/tv`,`/usenet/movies`
+- Twingate
+    - Setup from website and follow install instructions
+
 
   ## Testing
   Other than the usual things (ensure things download, to the right folders, detected by Jellyfin, videos play), reboot the server and then test things again.
