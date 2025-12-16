@@ -252,13 +252,20 @@ fi
 
 # --- 10. Firewall ---
 echo "--- Firewall (UFW) ---"
-log_change "Enabling UFW..."
+# Add rules silently (ufw is smart enough not to duplicate)
 ufw allow 22/tcp    > /dev/null
 ufw allow 8080/tcp > /dev/null
 ufw allow 8096/tcp > /dev/null
 ufw allow 8989/tcp > /dev/null
 ufw allow 7878/tcp > /dev/null
-ufw --force enable > /dev/null
+
+# Check status before trying to enable
+if ufw status | grep -q "Status: active"; then
+    log_ok "Firewall (UFW) is already active."
+else
+    log_change "Enabling UFW..."
+    ufw --force enable > /dev/null
+fi
 
 # --- 11. Automated Maintenance ---
 echo "--- Maintenance Schedule ---"
