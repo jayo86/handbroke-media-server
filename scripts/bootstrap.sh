@@ -177,7 +177,8 @@ fi
 
 # --- 7. Install Sonarr ---
 echo "--- Application: Sonarr ---"
-if ! dpkg -s sonarr >/dev/null 2>&1; then
+# CHECK UPDATE: Checks for the executable file itself (handles empty folders)
+if ! dpkg -s sonarr >/dev/null 2>&1 && [ ! -f "/opt/Sonarr/Sonarr" ] && [ ! -f "/usr/lib/sonarr/bin/Sonarr" ]; then
     log_change "Installing Sonarr..."
     # Running Sonarr installer headlessly
     curl -o install-sonarr.sh https://raw.githubusercontent.com/Sonarr/Sonarr/develop/distribution/debian/install.sh
@@ -199,7 +200,7 @@ else
     usermod -aG media radarr
 fi
 
-if [ ! -d "/opt/Radarr" ]; then
+if [ ! -f "/opt/Radarr/Radarr" ]; then
     log_change "Downloading Radarr..."
     wget -q --content-disposition 'http://radarr.servarr.com/v1/update/master/updatefile?os=linux&runtime=netcore&arch=x64' -O Radarr.tar.gz
     tar -xzf Radarr.tar.gz -C /opt/
