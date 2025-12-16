@@ -8,12 +8,22 @@ set -o pipefail
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 RED='\033[0;31m'
+CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # --- LOGGING FUNCTIONS ---
 log_ok() { echo -e "${GREEN}[OK]      $1${NC}"; }
 log_change() { echo -e "${YELLOW}[CHANGED] $1${NC}"; }
 log_err() { echo -e "${RED}[FAILED]  $1${NC}"; }
+log_skip() { echo -e "${CYAN}$1${NC}"; }
+
+# --- ARGUMENT PARSING ---
+SKIP_ACL=false
+for arg in "$@"; do
+  if [[ "$arg" == "-s" ]] || [[ "$arg" == "--skip-acl" ]]; then
+    SKIP_ACL=true
+  fi
+done
 
 # --- ERROR TRAP ---
 error_handler() {
@@ -228,12 +238,16 @@ mkdir -p "$TARGET_MOUNT/Downloads/incomplete"
 mkdir -p "$TARGET_MOUNT/tv"
 mkdir -p "$TARGET_MOUNT/movies"
 
-log_change "Applying Ownership & ACLs..."
-chown -R "$REAL_USER:media" "$TARGET_MOUNT"
-chmod -R 775 "$TARGET_MOUNT"
-chmod -R g+s "$TARGET_MOUNT"
-setfacl -R -m g:media:rwx "$TARGET_MOUNT"
-setfacl -d -R -m g:media:rwx "$TARGET_MOUNT"
+if [ "$SKIP_ACL" = true ]; then
+    log_skip "Skipping Ownership and ACLs task"
+else
+    log_change "Applying Ownership & ACLs..."
+    chown -R "$REAL_USER:media" "$TARGET_MOUNT"
+    chmod -R 775 "$TARGET_MOUNT"
+    chmod -R g+s "$TARGET_MOUNT"
+    setfacl -R -m g:media:rwx "$TARGET_MOUNT"
+    setfacl -d -R -m g:media:rwx "$TARGET_MOUNT"
+fi
 
 # --- 10. Firewall ---
 echo "--- Firewall (UFW) ---"
