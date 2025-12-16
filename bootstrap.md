@@ -28,6 +28,7 @@ This is tested only for Ubuntu 24.x
 - Downloads Radarr, creates user, and configures system service.
 - Creates folder structure and enforces group permissions.
 - Enables firewall and opens ports for all applications.
+- Add monthly cronjob (1st of every month at 3am) to update packages and reboots
 - Checks if kernel updates require a system reboot.
 
 Script is idempotent.
