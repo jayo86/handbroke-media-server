@@ -34,8 +34,8 @@ error_handler() {
 trap 'error_handler $LINENO' ERR
 
 # --- Configuration ---
-TARGET_MOUNT="/usenet"      # Slow Storage (SATA SSD)
-CACHE_MOUNT="/mnt/nvme_cache" # Fast Cache (NVMe Boot Drive)
+TARGET_MOUNT="/usenet"              # Slow Storage (SATA SSD)
+CACHE_MOUNT="/usenet_nvme_cache"    # Fast Cache (NVMe Boot Drive)
 VG_NAME="usenet_vg"
 LV_NAME="media_lv"
 
@@ -258,7 +258,7 @@ else
     setfacl -R -m g:media:rwx "$TARGET_MOUNT"
     setfacl -d -R -m g:media:rwx "$TARGET_MOUNT"
 
-    # 2. Apply to NVMe Cache (/mnt/nvme_cache)
+    # 2. Apply to NVMe Cache (/usenet_nvme_cache)
     chown -R "$REAL_USER:media" "$CACHE_MOUNT"
     chmod -R 775 "$CACHE_MOUNT"
     chmod -R g+s "$CACHE_MOUNT"
