@@ -34,7 +34,8 @@ error_handler() {
 trap 'error_handler $LINENO' ERR
 
 # --- Configuration ---
-TARGET_MOUNT="/usenet"
+TARGET_MOUNT="/usenet"      # Slow Storage (SATA SSD)
+CACHE_MOUNT="/mnt/nvme_cache" # Fast Cache (NVMe Boot Drive)
 VG_NAME="usenet_vg"
 LV_NAME="media_lv"
 
@@ -88,8 +89,8 @@ fi
 groupadd -f media
 usermod -aG media "$REAL_USER"
 
-# --- 4. STORAGE SETUP (ZERO TOUCH) ---
-echo "--- Storage Configuration ---"
+# --- 4. STORAGE SETUP (SATA DRIVE) ---
+echo "--- Storage Configuration (SATA) ---"
 
 if vgs $VG_NAME >/dev/null 2>&1; then
     if mount | grep -q "$TARGET_MOUNT"; then
@@ -232,10 +233,16 @@ else
     log_ok "Radarr is already installed."
 fi
 
-# --- 9. Directories & Permissions ---
+# --- 9. Directories & Permissions (UPDATED FOR NVME CACHE) ---
 echo "--- Permissions & Structure ---"
-mkdir -p "$TARGET_MOUNT/Downloads/complete"
-mkdir -p "$TARGET_MOUNT/Downloads/incomplete"
+
+# A. Create NVMe Cache Structure (The Fast Zone)
+log_change "Configuring NVMe Cache at $CACHE_MOUNT..."
+mkdir -p "$CACHE_MOUNT/complete"
+mkdir -p "$CACHE_MOUNT/incomplete"
+
+# B. Create SATA Storage Structure (The Library)
+log_change "Configuring Library Storage at $TARGET_MOUNT..."
 mkdir -p "$TARGET_MOUNT/tv"
 mkdir -p "$TARGET_MOUNT/movies"
 
@@ -243,11 +250,20 @@ if [ "$SKIP_ACL" = true ]; then
     log_skip "Skipping Ownership and ACLs task"
 else
     log_change "Applying Ownership & ACLs..."
+    
+    # 1. Apply to SATA Storage (/usenet)
     chown -R "$REAL_USER:media" "$TARGET_MOUNT"
     chmod -R 775 "$TARGET_MOUNT"
     chmod -R g+s "$TARGET_MOUNT"
     setfacl -R -m g:media:rwx "$TARGET_MOUNT"
     setfacl -d -R -m g:media:rwx "$TARGET_MOUNT"
+
+    # 2. Apply to NVMe Cache (/mnt/nvme_cache)
+    chown -R "$REAL_USER:media" "$CACHE_MOUNT"
+    chmod -R 775 "$CACHE_MOUNT"
+    chmod -R g+s "$CACHE_MOUNT"
+    setfacl -R -m g:media:rwx "$CACHE_MOUNT"
+    setfacl -d -R -m g:media:rwx "$CACHE_MOUNT"
 fi
 
 # --- 10. Firewall ---
@@ -287,7 +303,8 @@ echo ""
 echo "------------------------------------------------"
 echo -e "${GREEN}        INSTALLATION COMPLETE        ${NC}"
 echo "------------------------------------------------"
-echo " Storage Location: $TARGET_MOUNT"
+echo " Storage Location: $TARGET_MOUNT (SATA)"
+echo " Cache Location:   $CACHE_MOUNT (NVMe)"
 echo ""
 echo -e " * Jellyfin: ${YELLOW}http://$IP_ADDR:8096${NC}"
 echo -e " * Sonarr:   ${YELLOW}http://$IP_ADDR:8989${NC}"
