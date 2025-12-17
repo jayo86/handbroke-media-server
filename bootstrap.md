@@ -69,5 +69,5 @@ Log into each app's UI to:
     - Setup from website and follow install instructions
 
 
-  ## Testing
-  Other than the usual things (ensure things download, to the right folders, detected by Jellyfin, videos play), reboot the server and then test things again.
+## Testing
+Other than the usual things (ensure things download, to the right folders, detected by Jellyfin, videos play), reboot the server and then test things again.
