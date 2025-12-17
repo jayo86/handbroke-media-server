@@ -11,8 +11,8 @@ Setup process for a new server.<br>
 ### 2tb Sata SSD
 If a 2nd drive's detected, directories will be.
 **Jellyfin paths:**<br>
-usenet/tv<br>
-usenet/movies
+/usenet/tv<br>
+/usenet/movies
 
 ℹ️ If no 2nd drive detected, it will prompt if you want to continue and if yes, will then prompt you where you want to the folders.
 
@@ -60,7 +60,7 @@ Log into each app's UI to:
 - SABZBD
     - Configure provider
     - Set CHMOD 777 for newly downloaded files (important)
-    - Set folder paths for complete/incomplete, ie. `/usenet/Downloads/complete`,`/usenet/Downloads/incomplete`
+    - Set folder paths for complete/incomplete, ie. `/usenet_nvme_cache/complete`,`/usenet_nvme_cache/incomplete`
 - Sonarr & Radarr
     - Add download client (SABNZBD)
     - Add Indexer (GeekNZB)
