@@ -55,10 +55,16 @@ fi
 
 echo -e "--- Target User: ${YELLOW}$REAL_USER${NC} ---"
 
-# --- 2. System Update & Upgrade ---
+# --- 2. System Update & Upgrade (SMART CHECK) ---
 echo "--- System Updates ---"
-log_change "Updating Package Lists..."
-apt-get update -qq
+
+# Check if apt-update was run recently (within the last 60 mins)
+if [ -z "$(find /var/lib/apt/periodic/update-success-stamp -mmin -60 2>/dev/null)" ]; then
+    log_change "Updating Package Lists..."
+    apt-get update -qq
+else
+    log_ok "Package lists are fresh (updated <1h ago)."
+fi
 
 if apt-get -s upgrade | grep -q "0 upgraded, 0 newly installed"; then
     log_ok "System packages are up to date."
@@ -257,11 +263,9 @@ else
     }
 
     # Function to check if permissions need fixing
-    # 'find' returns true (0) if it found a file with WRONG owner/group
     check_needs_fix() {
         local dir=$1
         # Find first file NOT owned by user OR NOT group 'media'
-        # -print -quit ensures it stops immediately at the first bad file (fast!)
         if find "$dir" \( ! -user "$REAL_USER" -o ! -group media \) -print -quit | grep -q .; then
             return 0 # True, needs fix
         else
@@ -286,14 +290,25 @@ else
     fi
 fi
 
-# --- 10. Firewall ---
+# --- 10. Firewall (VERBOSE CHECK) ---
 echo "--- Firewall (UFW) ---"
-# Add rules silently (ufw is smart enough not to duplicate)
-ufw allow 22/tcp    > /dev/null
-ufw allow 8080/tcp > /dev/null
-ufw allow 8096/tcp > /dev/null
-ufw allow 8989/tcp > /dev/null
-ufw allow 7878/tcp > /dev/null
+
+check_port() {
+    local port=$1
+    local name=$2
+    if ufw status | grep -q "$port"; then
+        log_ok "Port $port ($name) is allowed."
+    else
+        ufw allow "$port/tcp" > /dev/null
+        log_change "Opened Port $port ($name)."
+    fi
+}
+
+check_port "22" "SSH"
+check_port "8080" "SABnzbd"
+check_port "8096" "Jellyfin"
+check_port "8989" "Sonarr"
+check_port "7878" "Radarr"
 
 # Check status before trying to enable
 if ufw status | grep -q "Status: active"; then
