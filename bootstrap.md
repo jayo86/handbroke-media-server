@@ -2,16 +2,19 @@
 
 Setup process for a new server.<br>
 
-If a 2nd drive's detected, directories will be.
+## Storage info
+### M.2 NVME
 **SABZBD paths:**<br>
 usenet/Downloads/complete<br>
 usenet/Downloads/incomplete<br>
 
+### 2tb Sata SSD
+If a 2nd drive's detected, directories will be.
 **Jellyfin paths:**<br>
 usenet/tv<br>
 usenet/movies
 
-If no 2nd drive detected, it will prompt if you want to continue and if yes, will then prompt you where you want to the folders.
+ℹ️ If no 2nd drive detected, it will prompt if you want to continue and if yes, will then prompt you where you want to the folders.
 
 External NAS can be considered at a later date, but not necessary with a 2tb SSD and redundancy not a priority. One day, but today is not that day.
 
