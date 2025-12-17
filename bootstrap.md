@@ -62,8 +62,8 @@ Log into each app's UI to:
     - Add download client (SABNZBD)
     - Add Indexer (GeekNZB)
     - set paths, ie. `/usenet/tv`,`/usenet/movies`
-- Twingate
-    - Setup from website and follow install instructions
+- TailScale/Twingate setup
+    - Further info to come (testing in progress)
 
 
 ## Testing
