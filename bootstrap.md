@@ -9,14 +9,11 @@ Setup process for a new server.<br>
 /usenet_nvme_cache/incomplete<br>
 
 ### 2tb Sata SSD
-If a 2nd drive's detected, directories will be.
-**Jellyfin paths:**<br>
+**Jellyfin/Sonarr/Radarr paths:**<br>
 /usenet/tv<br>
 /usenet/movies
 
 ℹ️ If no 2nd drive detected, it will prompt if you want to continue and if yes, will then prompt you where you want to the folders.
-
-External NAS can be considered at a later date, but not necessary with a 2tb SSD and redundancy not a priority. One day, but today is not that day.
 
 ## Bootstrap Script
 This is tested only for Ubuntu 24.x
