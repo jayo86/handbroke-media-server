@@ -233,37 +233,56 @@ else
     log_ok "Radarr is already installed."
 fi
 
-# --- 9. Directories & Permissions (UPDATED FOR NVME CACHE) ---
+# --- 9. Directories & Permissions (SMART CHECK) ---
 echo "--- Permissions & Structure ---"
 
-# A. Create NVMe Cache Structure (The Fast Zone)
-log_change "Configuring NVMe Cache at $CACHE_MOUNT..."
+# Ensure structure exists
 mkdir -p "$CACHE_MOUNT/complete"
 mkdir -p "$CACHE_MOUNT/incomplete"
-
-# B. Create SATA Storage Structure (The Library)
-log_change "Configuring Library Storage at $TARGET_MOUNT..."
 mkdir -p "$TARGET_MOUNT/tv"
 mkdir -p "$TARGET_MOUNT/movies"
 
 if [ "$SKIP_ACL" = true ]; then
     log_skip "Skipping Ownership and ACLs task"
 else
-    log_change "Applying Ownership & ACLs..."
-    
-    # 1. Apply to SATA Storage (/usenet)
-    chown -R "$REAL_USER:media" "$TARGET_MOUNT"
-    chmod -R 775 "$TARGET_MOUNT"
-    chmod -R g+s "$TARGET_MOUNT"
-    setfacl -R -m g:media:rwx "$TARGET_MOUNT"
-    setfacl -d -R -m g:media:rwx "$TARGET_MOUNT"
+    # Function to apply permissions
+    apply_perms() {
+        local dir=$1
+        chown -R "$REAL_USER:media" "$dir"
+        chmod -R 775 "$dir"
+        chmod -R g+s "$dir"
+        setfacl -R -m g:media:rwx "$dir"
+        setfacl -d -R -m g:media:rwx "$dir"
+    }
 
-    # 2. Apply to NVMe Cache (/usenet_nvme_cache)
-    chown -R "$REAL_USER:media" "$CACHE_MOUNT"
-    chmod -R 775 "$CACHE_MOUNT"
-    chmod -R g+s "$CACHE_MOUNT"
-    setfacl -R -m g:media:rwx "$CACHE_MOUNT"
-    setfacl -d -R -m g:media:rwx "$CACHE_MOUNT"
+    # Function to check if permissions need fixing
+    # 'find' returns true (0) if it found a file with WRONG owner/group
+    check_needs_fix() {
+        local dir=$1
+        # Find first file NOT owned by user OR NOT group 'media'
+        # -print -quit ensures it stops immediately at the first bad file (fast!)
+        if find "$dir" \( ! -user "$REAL_USER" -o ! -group media \) -print -quit | grep -q .; then
+            return 0 # True, needs fix
+        else
+            return 1 # False, all good
+        fi
+    }
+
+    # 1. Check NVMe Cache
+    if check_needs_fix "$CACHE_MOUNT"; then
+        log_change "Fixing permissions on NVMe Cache..."
+        apply_perms "$CACHE_MOUNT"
+    else
+        log_ok "NVMe Cache permissions are correct."
+    fi
+
+    # 2. Check SATA Storage
+    if check_needs_fix "$TARGET_MOUNT"; then
+        log_change "Fixing permissions on Library Storage..."
+        apply_perms "$TARGET_MOUNT"
+    else
+        log_ok "Library Storage permissions are correct."
+    fi
 fi
 
 # --- 10. Firewall ---
@@ -285,12 +304,9 @@ fi
 
 # --- 11. Automated Maintenance ---
 echo "--- Maintenance Schedule ---"
-# Create a cron file in /etc/cron.d (cleaner than user crontabs)
 CRON_FILE="/etc/cron.d/media_auto_update"
 if [ ! -f "$CRON_FILE" ]; then
     log_change "Setting up monthly update & reboot (1st of month @ 3am)..."
-    # Format: m h  dom mon dow user command
-    # 0 3 1 * * = 03:00 AM on the 1st of every month
     echo "0 3 1 * * root apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get upgrade -y && /sbin/shutdown -r now" > "$CRON_FILE"
     chmod 644 "$CRON_FILE"
 else
