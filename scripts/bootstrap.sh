@@ -193,11 +193,12 @@ fi
 
 # --- 8. Install Radarr ---
 echo "--- Application: Radarr ---"
+# Create user if missing, but stay silent if they exist
 if ! id -u radarr &>/dev/null; then
     log_change "Creating User 'radarr'..."
     useradd -r -s /usr/sbin/nologin -g media -m -d /var/lib/radarr radarr
 else
-    log_ok "User 'radarr' exists."
+    # Silently ensure group membership
     usermod -aG media radarr
 fi
 
