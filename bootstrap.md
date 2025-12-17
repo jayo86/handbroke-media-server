@@ -5,8 +5,8 @@ Setup process for a new server.<br>
 ## Storage info
 ### M.2 NVME
 **SABZBD paths:**<br>
-usenet/Downloads/complete<br>
-usenet/Downloads/incomplete<br>
+/usenet_nvme_cache/complete<br>
+/usenet_nvme_cache/incomplete<br>
 
 ### 2tb Sata SSD
 If a 2nd drive's detected, directories will be.
