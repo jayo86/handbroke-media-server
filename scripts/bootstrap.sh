@@ -290,13 +290,14 @@ else
     fi
 fi
 
-# --- 10. Firewall (VERBOSE CHECK) ---
+# --- 10. Firewall (OFFLINE-SAFE CHECK) ---
 echo "--- Firewall (UFW) ---"
 
 check_port() {
     local port=$1
     local name=$2
-    if ufw status | grep -q "$port"; then
+    # Check 'ufw show added' to find rules even if UFW is inactive/disabled
+    if ufw show added | grep -q "$port"; then
         log_ok "Port $port ($name) is allowed."
     else
         ufw allow "$port/tcp" > /dev/null
