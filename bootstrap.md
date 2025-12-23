@@ -19,7 +19,8 @@ Setup process for a new server.<br>
 This is tested only for Ubuntu 24.x
 - Verifies root access and identifies the target user.
 - Updates and upgrades all system packages to latest versions.
-- Installs dependencies and increases system file watcher limits.
+- Installs dependencies
+- Increases system file watcher limits- as per [Jellyfin KB to ensure Real Time Monitoring works](https://jellyfin.org/docs/general/administration/troubleshooting/#real-time-monitoring)
 - Auto-detects, wipes, formats, and mounts the storage drive.
 - Installs OpenSSH
 - Installs the Jellyfin media server application.
