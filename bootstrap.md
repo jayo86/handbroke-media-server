@@ -35,7 +35,7 @@ This is tested only for Ubuntu 24.x
 Script is idempotent.
 
 ### Steps
-1. Install git, clone repo, update perms to be able to run
+1. Install git, clone repo
     ```bash
     sudo apt update
     sudo apt install git -y
