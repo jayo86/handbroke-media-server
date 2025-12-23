@@ -43,7 +43,6 @@ Script is idempotent.
     cd ~/repos
     git clone https://github.com/jayo86/handbroke-media-server.git
     cd scripts
-    sudo chmod +x bootstrap.sh
     ```
 2. Run
     ```bash
