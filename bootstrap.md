@@ -13,7 +13,7 @@ Setup process for a new server.<br>
 /usenet/tv<br>
 /usenet/movies
 
-ℹ️ If no 2nd drive detected, it will prompt if you want to continue and if yes, will then prompt you where you want to the folders.
+ℹ️ If no 2nd drive detected, it will prompt if you want to continue and if yes, will then prompt you where you want put to the folders.
 
 ## Bootstrap Script
 This is tested only for Ubuntu 24.x
