@@ -22,11 +22,11 @@ This is tested only for Ubuntu 24.x
 - Installs dependencies
 - Increases system file watcher limits- as per [Jellyfin KB to ensure Real Time Monitoring works](https://jellyfin.org/docs/general/administration/troubleshooting/#real-time-monitoring)
 - Auto-detects, wipes, formats, and mounts the storage drive.
-- Installs OpenSSH
-- Installs the Jellyfin media server application.
-- Installs SABnzbd and force-creates its system user.
-- Installs Sonarr using the official installer script.
-- Downloads Radarr, creates user, and configures system service.
+- Installs: OpenSSH
+    - Jellyfin using the official installer script.
+    - SABnzbd (also force-creates its system user).
+    - Sonarr using the official installer script.
+    - Radarr (no official script, so also creates user, and configures system service)
 - Creates folder structure and enforces group permissions.
 - Enables firewall and opens ports for all applications.
 - Add monthly cronjob (1st of every month at 3am) to update packages and reboots
